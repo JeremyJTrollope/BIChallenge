@@ -31,18 +31,23 @@ group by idfa ) b;
   b) Data Source :: App ID--Add a column and parse out the date and times from the location_event_time column
 
 --Solution:
+
 --Parse out the date field using text functions
 alter table dbo.FRECKLE_SAMPLE add datefinal varchar(20);
+
 update dbo.FRECKLE_SAMPLE set datefinal=concat(substring(location_event_time,1,10),' ',SUBSTRING(location_event_time,12,8));
 
 --Format the date so that it can be read properly
+
 update dbo.FRECKLE_SAMPLE set datefinal=convert(datetime,datefinal);
 
 --Add columns for the day and hour
+
 alter table dbo.FRECKLE_SAMPLE add event_day date;
 alter table dbo.FRECKLE_SAMPLE add event_hour int;
 
 --Set the day column to be the event day and the hour column to be event hour
+
 update dbo.FRECKLE_SAMPLE set event_day=convert(date,datefinal);
 update dbo.FRECKLE_SAMPLE set event_hour=datepart(hour,datefinal);
 
@@ -50,24 +55,29 @@ update dbo.FRECKLE_SAMPLE set event_hour=datepart(hour,datefinal);
 select * from dbo.FRECKLE_SAMPLE;
 
 --Pull together source_data and AppID for Source::AppID heirarchy
+
 alter table dbo.FRECKLE_SAMPLE add DataSource_AppID varchar(100);
 update dbo.FRECKLE_SAMPLE set DataSource_AppID=concat(source_data,'_',app_id);
 
 --Pull together day and hour columns for Day::Hour heirarchy
+
 alter table dbo.FRECKLE_SAMPLE add Date_Hour varchar(100);
 update dbo.FRECKLE_SAMPLE set Date_Hour=concat(event_day,'_',event_hour);
 
 --Create a table that summarizes the number of IDs with the specified heirarchies
+
 select DataSource_AppID,Date_Hour,count(distinct idfa) as UniqueIDs into FRECKLE_FACT from dbo.FRECKLE_SAMPLE 
 group by DataSource_AppID,Date_Hour;
 
 --Check work
+
 select * from FRECKLE_FACT;
 
 
 5. Using the data model constructed in 4, determine how many unique user-ids are represented in hour 1-2pm (13:00-14:00) for app_id 17, data_source twine
 
 --Answer: 2,882 Unique IDs
+
 --Solution:
 select * from FRECKLE_FACT where lower(DataSource_AppID) like 'twine_17' and date_hour like'%_13%';
 
@@ -75,7 +85,9 @@ select * from FRECKLE_FACT where lower(DataSource_AppID) like 'twine_17' and dat
 
 --Answer: Poisson distribution with Lambda=1.204
 --Solution:
+
 --Create a table that shows the number of events per unique ID
+
 select idfa,count(distinct location_event_time) as events into EventsPerID from dbo.freckle_sample 
 where idfa is not null
 group by idfa; 
@@ -85,8 +97,11 @@ select events,count(*) from EventsPerID group by events order by events;
 --Events per IDFA is positively skewed
 
 --Calculate the average and standard deviation
+
 select avg(convert(float,events)) from EventsPerID;--1.2043
+
 select stdev(convert(float,events)) from EventsPerID;--0.8165
+
 --Since the number of events per ID is discrete, right skewed and has a low mean the best distribution is Poisson
 
 --Goodness of fit tests could be performed using R or another statistical software package to further validate this model
