@@ -33,6 +33,7 @@ group by idfa ) b;
 --Solution:
 
 --Parse out the date field using text functions
+
 alter table dbo.FRECKLE_SAMPLE add datefinal varchar(20);
 
 update dbo.FRECKLE_SAMPLE set datefinal=concat(substring(location_event_time,1,10),' ',SUBSTRING(location_event_time,12,8));
@@ -44,24 +45,29 @@ update dbo.FRECKLE_SAMPLE set datefinal=convert(datetime,datefinal);
 --Add columns for the day and hour
 
 alter table dbo.FRECKLE_SAMPLE add event_day date;
+
 alter table dbo.FRECKLE_SAMPLE add event_hour int;
 
 --Set the day column to be the event day and the hour column to be event hour
 
 update dbo.FRECKLE_SAMPLE set event_day=convert(date,datefinal);
+
 update dbo.FRECKLE_SAMPLE set event_hour=datepart(hour,datefinal);
 
 --Check that everything worked
+
 select * from dbo.FRECKLE_SAMPLE;
 
 --Pull together source_data and AppID for Source::AppID heirarchy
 
 alter table dbo.FRECKLE_SAMPLE add DataSource_AppID varchar(100);
+
 update dbo.FRECKLE_SAMPLE set DataSource_AppID=concat(source_data,'_',app_id);
 
 --Pull together day and hour columns for Day::Hour heirarchy
 
 alter table dbo.FRECKLE_SAMPLE add Date_Hour varchar(100);
+
 update dbo.FRECKLE_SAMPLE set Date_Hour=concat(event_day,'_',event_hour);
 
 --Create a table that summarizes the number of IDs with the specified heirarchies
@@ -93,7 +99,9 @@ where idfa is not null
 group by idfa; 
 
 --Check the distribution of values for symmetry
+
 select events,count(*) from EventsPerID group by events order by events;
+
 --Events per IDFA is positively skewed
 
 --Calculate the average and standard deviation
